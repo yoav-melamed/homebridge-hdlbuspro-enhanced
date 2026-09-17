@@ -1,17 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic } from 'homebridge';
+import type { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic } from 'homebridge';
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- smart-bus is CommonJS
 import SmartBus = require('smart-bus');
-import { Bus, Device } from 'smart-bus';
+import type { Bus, Device } from 'smart-bus';
 
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
 import { DeviceType, deviceTypeMap } from './DeviceList';
 import { ABCDevice, ABCListener } from './ABC';
-import { RelayHeater } from './RelayHeater';
 import { RelayRGB } from './RelayRGB';
 
 export class HDLBusproHomebridge implements DynamicPlatformPlugin {
-  public readonly Service: typeof Service = this.api.hap.Service;
-  public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic;
+  public readonly Service: typeof Service;
+  public readonly Characteristic: typeof Characteristic;
   public readonly accessories: PlatformAccessory[] = [];
 
   constructor(
@@ -19,6 +19,8 @@ export class HDLBusproHomebridge implements DynamicPlatformPlugin {
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
+    this.Service = this.api.hap.Service;
+    this.Characteristic = this.api.hap.Characteristic;
     this.log.debug('Finished initializing platform:', this.config.name);
 
     this.api.on('didFinishLaunching', () => {
@@ -46,12 +48,22 @@ export class HDLBusproHomebridge implements DynamicPlatformPlugin {
         port: port,
       });
 
+      if (!Array.isArray(bus.subnets)) {
+        this.log.error(`Plugin configuration error: bus ${ip}:${port} has no "subnets" array.`);
+        continue;
+      }
+
       for (const subnet of bus.subnets) {
         const subnet_number: number = subnet.subnet_number;
         const cd_number: number = subnet.cd_number;
         const controllerObj: Device = busObj.controller(`${subnet_number}.${cd_number}`);
         const addressedDeviceMap = new Map();
         const uniqueIDPrefix = `${ip}:${port}.${subnet_number}`;
+
+        if (!Array.isArray(subnet.devices)) {
+          this.log.error(`Plugin configuration error: subnet ${subnet_number} has no "devices" array.`);
+          continue;
+        }
 
         for (const device of subnet.devices) {
           this.discoverDevice(busObj, subnet_number, device, uniqueIDPrefix, controllerObj, addressedDeviceMap);
@@ -72,7 +84,7 @@ export class HDLBusproHomebridge implements DynamicPlatformPlugin {
     const deviceType: string = (device.device_type === 'drycontact') ? device.drycontact_type : device.device_type;
 
     this.log.info(`🔍 Discovering Device: ${device.device_name}, Type: ${deviceType}, Address: ${deviceAddress}`);
-    this.log.info('🔍 Raw Device Data:', JSON.stringify(device, null, 2));
+    this.log.debug('🔍 Raw Device Data:', JSON.stringify(device, null, 2));
 
     if (deviceType === 'relayrgb') {
       this.handleRGBDevice(device, deviceAddress, uniqueIDPrefix, busObj, controllerObj);

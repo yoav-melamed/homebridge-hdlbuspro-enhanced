@@ -1,7 +1,6 @@
-/* eslint-disable max-len */
-import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
+import type { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
 import { EventEmitter } from 'events';
-import { Device } from 'smart-bus';
+import type { Device } from 'smart-bus';
 
 import { HDLBusproHomebridge } from './HDLPlatform';
 import { ABCDevice, ABCListener } from './ABC';
@@ -91,7 +90,6 @@ export class RelayCurtains implements ABCDevice {
             if (this.RelayCurtainsStates.CurrentPosition < 100) {
               ++this.RelayCurtainsStates.CurrentPosition;
               this.service.getCharacteristic(Characteristic.CurrentPosition).updateValue(this.RelayCurtainsStates.CurrentPosition);
-              this.saveCurrentPosition();
             }
           }, 10 * this.duration);
           if (
@@ -107,13 +105,13 @@ export class RelayCurtains implements ABCDevice {
           } else {
             this.platform.log.debug('Starting partial open of ' + this.name + ' (from ' + this.RelayCurtainsStates.CurrentPosition + ' to ' + this.RelayCurtainsStates.TargetPosition + ')');
             const pathtogo = this.RelayCurtainsStates.TargetPosition - this.RelayCurtainsStates.CurrentPosition;
-            clearInterval(this.stopper_process);
+            clearTimeout(this.stopper_process);
             this.stopper_process = setTimeout(() => {
               this.controller.send({
                 target: this.device,
                 command: 0xE3E0,
                 data: { curtain: this.channel, status: this.HDLStop },
-              }, false);
+              }, () => undefined);
               this.service.getCharacteristic(Characteristic.CurrentPosition).updateValue(this.RelayCurtainsStates.CurrentPosition);
               this.platform.log.debug('Reached partial open position of ' + this.name + ' at ' + this.RelayCurtainsStates.TargetPosition);
               this.saveCurrentPosition();
@@ -128,7 +126,6 @@ export class RelayCurtains implements ABCDevice {
             if (this.RelayCurtainsStates.CurrentPosition > 0) {
               --this.RelayCurtainsStates.CurrentPosition;
               this.service.getCharacteristic(Characteristic.CurrentPosition).updateValue(this.RelayCurtainsStates.CurrentPosition);
-              this.saveCurrentPosition();
             }
           }, 10 * this.duration);
           if (
@@ -144,13 +141,13 @@ export class RelayCurtains implements ABCDevice {
           } else {
             this.platform.log.debug('Starting partial close of ' + this.name + ' (from ' + this.RelayCurtainsStates.CurrentPosition + ' to ' + this.RelayCurtainsStates.TargetPosition + ')');
             const pathtogo = this.RelayCurtainsStates.CurrentPosition - this.RelayCurtainsStates.TargetPosition;
-            clearInterval(this.stopper_process);
+            clearTimeout(this.stopper_process);
             this.stopper_process = setTimeout(() => {
               this.controller.send({
                 target: this.device,
                 command: 0xE3E0,
                 data: { curtain: this.channel, status: this.HDLStop },
-              }, false);
+              }, () => undefined);
               this.service.getCharacteristic(Characteristic.CurrentPosition).updateValue(this.RelayCurtainsStates.CurrentPosition);
               this.platform.log.debug('Reached partial close position of ' + this.name + ' at ' + this.RelayCurtainsStates.TargetPosition);
               this.saveCurrentPosition();
@@ -165,7 +162,7 @@ export class RelayCurtains implements ABCDevice {
       target: this.device,
       command: 0xE3E2,
       data: { curtain: this.channel },
-    }, false);
+    }, () => undefined);
   }
 
   private saveCurrentPosition() {
@@ -256,6 +253,9 @@ export class RelayCurtainListener implements ABCListener {
     });
     this.device.on(0xE3E4, (command) => {
       const data = command.data;
+      if (!Array.isArray(data.curtains)) {
+        return;
+      }
       for (const curtainInfo of data.curtains) {
         const curtain = curtainInfo.number;
         const status = curtainInfo.status;

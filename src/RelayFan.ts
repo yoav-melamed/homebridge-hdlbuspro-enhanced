@@ -1,5 +1,5 @@
-import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
-import { Device } from 'smart-bus';
+import type { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
+import type { Device } from 'smart-bus';
 import { HDLBusproHomebridge } from './HDLPlatform';
 import { ABCDevice } from './ABC';
 import { RelayListener } from './RelayLightbulb';
@@ -50,6 +50,10 @@ export class RelayFan implements ABCDevice {
   async setOn(value: CharacteristicValue) {
     const oldValue = this.RelayFanStates.On;
     this.RelayFanStates.On = value as boolean;
+    if (this.RelayFanStates.On && this.RelayFanStates.Speed === 0) {
+      this.RelayFanStates.Speed = 100;
+      this.service.getCharacteristic(this.platform.Characteristic.RotationSpeed).updateValue(this.RelayFanStates.Speed);
+    }
     this.controller.send({
       target: this.device,
       command: 0x0031,
@@ -98,6 +102,6 @@ export class RelayFan implements ABCDevice {
 
   // Function to map HDL values (0-10) to Homebridge values (0-100)
   private mapHDLSpeedToHomebridge(value: number): number {
-    return Math.round(value * 10);
+    return Math.min(100, Math.max(0, Math.round(value * 10)));
   }
 }

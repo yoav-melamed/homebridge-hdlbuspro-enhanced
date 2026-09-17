@@ -1,5 +1,5 @@
-import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
-import { Device } from 'smart-bus';
+import type { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
+import type { Device } from 'smart-bus';
 import { HDLBusproHomebridge } from './HDLPlatform';
 import { RelayListener } from './RelayLightbulb';
 import { ABCDevice } from './ABC';
@@ -169,6 +169,10 @@ export class RelayRGB implements ABCDevice {
         target: this.device,
         command: 0x0031,
         data: { channel: cmd.channel, level: cmd.level },
+      }, (err) => {
+        if (err) {
+          this.platform.log.error(`Error setting channel ${cmd.channel} for ${this.name}: ${err.message}`);
+        }
       });
     });
 

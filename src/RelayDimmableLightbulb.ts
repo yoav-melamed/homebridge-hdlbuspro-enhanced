@@ -1,5 +1,5 @@
-import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
-import { Device } from 'smart-bus';
+import type { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
+import type { Device } from 'smart-bus';
 
 import { HDLBusproHomebridge } from './HDLPlatform';
 import { RelayListener } from './RelayLightbulb';

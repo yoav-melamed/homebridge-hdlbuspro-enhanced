@@ -1,20 +1,26 @@
 {
   "compilerOptions": {
-    "target": "ES2020", // ✅ Supports async/await properly
+    "target": "ES2022",
     "module": "commonjs",
-    "moduleResolution": "node", // ✅ Ensures Smart-Bus & Homebridge work
+    // ponytail: homebridge 2.x ships ESM-only types, which "node16" resolution
+    // refuses to import from a CommonJS file. Staying CommonJS keeps the plugin
+    // loadable on homebridge 1.6+ as engines declares; drop this and switch the
+    // package to ESM when 1.x support is dropped (required for TypeScript 7).
+    "moduleResolution": "node10",
+    "ignoreDeprecations": "6.0",
     "lib": [
-      "es2019", // ✅ More modern features
-      "es2020"
+      "ES2022"
     ],
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "strict": false, // ✅ Avoids type conversion issues
+    // smart-bus ships no type declarations, so its imports resolve to `any`.
+    "strict": false,
     "noImplicitAny": false,
-    "resolveJsonModule": true // ✅ Fixes potential JSON config issues
+    "skipLibCheck": true,
+    "resolveJsonModule": true
   },
   "include": [
     "src/"

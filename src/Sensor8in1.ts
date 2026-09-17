@@ -1,5 +1,5 @@
-import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
-import { Device } from 'smart-bus';
+import type { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
+import type { Device } from 'smart-bus';
 
 import { HDLBusproHomebridge } from './HDLPlatform';
 import { ABCDevice, ABCListener } from './ABC';
@@ -74,7 +74,7 @@ export class Sensor8in1 implements ABCDevice {
       this.controller.send({
         target: this.device,
         command: 0x1645,
-      }, false);
+      }, () => undefined);
     }, 1000);
   }
 

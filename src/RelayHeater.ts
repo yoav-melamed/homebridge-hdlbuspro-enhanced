@@ -1,15 +1,12 @@
-import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
-import { Device } from 'smart-bus';
+import type { Service, PlatformAccessory } from 'homebridge';
+import type { Device } from 'smart-bus';
 import { HDLBusproHomebridge } from './HDLPlatform';
+import { RelayListener } from './RelayLightbulb';
 import { ABCDevice } from './ABC';
 
 export class RelayHeater implements ABCDevice {
   private service: Service;
-  private heaterState = {
-    active: 0, // 0 = Off, 1 = On
-    currentTemp: 20,
-    targetTemp: 22,
-  };
+  private heaterState: { active: number; currentTemp: number; targetTemp: number };
 
   // HDL MFH06.432 Specific Commands
   private readonly HDL_HEATER_CONTROL_CMD = 0xE3E0;
@@ -22,10 +19,20 @@ export class RelayHeater implements ABCDevice {
     private readonly name: string,
     private readonly controller: Device,
     private readonly device: Device,
+    private readonly listener: RelayListener,
     private readonly channel: number,
+    private readonly minTemperature = 15,
+    private readonly maxTemperature = 35,
+    private readonly defaultTemperature = 22,
   ) {
     const Service = this.platform.Service;
     const Characteristic = this.platform.Characteristic;
+
+    this.heaterState = {
+      active: 0, // 0 = Off, 1 = On
+      currentTemp: this.defaultTemperature,
+      targetTemp: this.defaultTemperature,
+    };
 
     // Accessory Information
     this.accessory.getService(Service.AccessoryInformation)!
@@ -47,18 +54,13 @@ export class RelayHeater implements ABCDevice {
   private configureCharacteristics() {
     const Characteristic = this.platform.Characteristic;
 
-    // Active State
-    this.service.getCharacteristic(Characteristic.Active)
-      .onGet(() => this.heaterState.active)
-      .onSet((value) => this.setPowerState(value as number));
-
     // Temperature Characteristics
     this.service.getCharacteristic(Characteristic.CurrentTemperature)
       .setProps({ minValue: 5, maxValue: 40, minStep: 0.5 })
       .onGet(() => this.heaterState.currentTemp);
 
     this.service.getCharacteristic(Characteristic.TargetTemperature)
-      .setProps({ minValue: 15, maxValue: 35, minStep: 0.5 })
+      .setProps({ minValue: this.minTemperature, maxValue: this.maxTemperature, minStep: 0.5 })
       .onGet(() => this.heaterState.targetTemp)
       .onSet((value) => this.setTargetTemperature(value as number));
 
@@ -94,19 +96,23 @@ export class RelayHeater implements ABCDevice {
     });
   }
 
-  private updateFromStatus(data: any) {
+  private updateFromStatus(data: Record<string, number | boolean | undefined>) {
     // Update power state
     if (data.power !== undefined) {
       this.heaterState.active = data.power ? 1 : 0;
       this.service.updateCharacteristic(
-        this.platform.Characteristic.Active,
+        this.platform.Characteristic.CurrentHeatingCoolingState,
+        this.heaterState.active,
+      );
+      this.service.updateCharacteristic(
+        this.platform.Characteristic.TargetHeatingCoolingState,
         this.heaterState.active,
       );
     }
 
     // Update temperatures (direct values, no scaling needed)
     if (data.currentTemp !== undefined) {
-      this.heaterState.currentTemp = data.currentTemp;
+      this.heaterState.currentTemp = data.currentTemp as number;
       this.service.updateCharacteristic(
         this.platform.Characteristic.CurrentTemperature,
         this.heaterState.currentTemp,
@@ -114,7 +120,7 @@ export class RelayHeater implements ABCDevice {
     }
 
     if (data.targetTemp !== undefined) {
-      this.heaterState.targetTemp = data.targetTemp;
+      this.heaterState.targetTemp = data.targetTemp as number;
       this.service.updateCharacteristic(
         this.platform.Characteristic.TargetTemperature,
         this.heaterState.targetTemp,
@@ -131,10 +137,12 @@ export class RelayHeater implements ABCDevice {
         status: state ? 1 : 0,
       },
     }, (err) => {
-      if (!err) {
-        this.heaterState.active = state;
-        this.platform.log.info(`Power state set to ${state ? 'ON' : 'OFF'}`);
+      if (err) {
+        this.platform.log.error(`Error setting power state for ${this.name}: ${err.message}`);
+        return;
       }
+      this.heaterState.active = state;
+      this.platform.log.info(`Power state set to ${state ? 'ON' : 'OFF'}`);
     });
   }
 
@@ -147,10 +155,12 @@ export class RelayHeater implements ABCDevice {
         temperature: temp,
       },
     }, (err) => {
-      if (!err) {
-        this.heaterState.targetTemp = temp;
-        this.platform.log.info(`Target temperature set to ${temp}°C`);
+      if (err) {
+        this.platform.log.error(`Error setting target temperature for ${this.name}: ${err.message}`);
+        return;
       }
+      this.heaterState.targetTemp = temp;
+      this.platform.log.info(`Target temperature set to ${temp}°C`);
     });
   }
 }

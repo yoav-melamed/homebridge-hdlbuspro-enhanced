@@ -1,6 +1,6 @@
-import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
+import type { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
 import { EventEmitter } from 'events';
-import { Device } from 'smart-bus';
+import type { Device } from 'smart-bus';
 
 import { HDLBusproHomebridge } from './HDLPlatform';
 import { ABCDevice, ABCListener } from './ABC';
@@ -48,7 +48,7 @@ export class RelayLightbulb implements ABCDevice {
     this.controller.send({
       target: this.device,
       command: 0x0031,
-      data: { channel: this.channel, level: ((value as number) * 100) },
+      data: { channel: this.channel, level: value ? 100 : 0 },
     }, (err) => {
       if (err) {
         // Revert to the old value
@@ -85,6 +85,9 @@ export class RelayListener implements ABCListener {
     // status request response listener
     this.device.on(0x0034, (command) => {
       const data = command.data;
+      if (!Array.isArray(data.channels)) {
+        return;
+      }
       for (const channelInfo of data.channels) {
         this.channelsMap.set(channelInfo.number, channelInfo.level);
         this.eventEmitter.emit(`update_${channelInfo.number}`, channelInfo.level);
@@ -94,7 +97,7 @@ export class RelayListener implements ABCListener {
     this.controller.send({
       target: this.device,
       command: 0x0033,
-    }, false);
+    }, () => undefined);
   }
 
   // This function returns an EventEmitter for the specified channel

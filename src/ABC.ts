@@ -1,15 +1,7 @@
-import { PlatformAccessory } from 'homebridge';
-import { Device } from 'smart-bus';
+/**
+ * Marker types shared by every accessory and bus listener. They intentionally
+ * carry no members -- they exist only to constrain the generics in DeviceList.
+ */
+export type ABCDevice = object;
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface ABCDevice {
-  // Base device interface
-}
-
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface ABCListener {
-  // Base listener interface
-}
-// export abstract class ABCDevice {}
-
-// export abstract class ABCListener {}
+export type ABCListener = object;

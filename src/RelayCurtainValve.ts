@@ -1,5 +1,5 @@
-import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
-import { Device } from 'smart-bus';
+import type { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
+import type { Device } from 'smart-bus';
 
 import { HDLBusproHomebridge } from './HDLPlatform';
 import { RelayCurtainListener } from './RelayCurtains';
@@ -81,7 +81,7 @@ export class RelayCurtainValve implements ABCDevice {
       target: this.device,
       command: 0xE3E2,
       data: { curtain: this.channel },
-    }, false);
+    }, () => undefined);
   }
 
   async handleActiveSet(newactive: CharacteristicValue) {

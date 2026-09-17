@@ -12,7 +12,6 @@ import { ContactSensor, DryListener } from './ContactSensor';
 import { RelayCurtains, RelayCurtainListener } from './RelayCurtains';
 import { RelayCurtainValve } from './RelayCurtainValve';
 import { RelayHeater } from './RelayHeater';
-import { RelayRGB } from './RelayRGB';
 import { RelayFan } from './RelayFan';
 
 export interface DeviceType<T extends ABCDevice, U extends ABCListener> {
@@ -95,11 +94,5 @@ export const deviceTypeMap: { [key: string]: DeviceType<any, any> } = {
     listener: RelayListener,
     uniqueArgs: (config) => [config.channel, config.minTemperature, config.maxTemperature, config.defaultTemperature],
     idEnding: (config) => `${config.channel}`,
-  },
-  'relayrgb': {  // ✅ Fully Fixed RGB Support
-    deviceClass: RelayRGB,
-    listener: RelayListener,  // Change if a dedicated listener is needed
-    uniqueArgs: (config) => [config.red_channel, config.green_channel, config.blue_channel],
-    idEnding: (config) => `${config.red_channel}-${config.green_channel}-${config.blue_channel}`,
   },
 };

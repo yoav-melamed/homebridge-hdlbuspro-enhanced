@@ -1,15 +1,13 @@
-import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
+import type { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
 import { EventEmitter } from 'events';
-import { Device } from 'smart-bus';
+import type { Device } from 'smart-bus';
 
 import { HDLBusproHomebridge } from './HDLPlatform';
 import { ABCDevice, ABCListener } from './ABC';
 
 export class ContactSensor implements ABCDevice {
   private service: Service;
-  private ContactStates = {
-    Detected: this.platform.Characteristic.ContactSensorState.CONTACT_NOT_DETECTED,
-  };
+  private ContactStates: { Detected: CharacteristicValue };
 
   constructor(
     private readonly platform: HDLBusproHomebridge,
@@ -24,6 +22,7 @@ export class ContactSensor implements ABCDevice {
   ) {
     const Service = this.platform.Service;
     const Characteristic = this.platform.Characteristic;
+    this.ContactStates = { Detected: Characteristic.ContactSensorState.CONTACT_NOT_DETECTED };
     this.accessory.getService(Service.AccessoryInformation)!
       .setCharacteristic(Characteristic.Manufacturer, 'HDL');
     this.service =
@@ -59,7 +58,7 @@ export class ContactSensor implements ABCDevice {
           target: this.device,
           command: 0x15CE,
           data: { area: this.area, switch: this.channel },
-        }, false);
+        }, () => undefined);
       }, 1000);
     }
   }

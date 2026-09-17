@@ -3,7 +3,8 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
-  "editor.rulers": [ 140 ],
+  "editor.rulers": [140],
   "eslint.enable": true,
-  "cmake.configureOnOpen": false
+  "cmake.configureOnOpen": false,
+  "cSpell.words": ["Buspro"]
 }
