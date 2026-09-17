@@ -2,7 +2,7 @@
   "private": false,
   "displayName": "HDL Buspro Enhanced",
   "name": "@elshaer/homebridge-hdl-buspro-enhanced",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Linking the HDL bus into the Homebridge widget",
   "homepage": "https://github.com/EyadElshaer/homebridge-hdlbuspro-enhanced.git",
   "license": "Apache-2.0",

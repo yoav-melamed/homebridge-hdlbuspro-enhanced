@@ -237,4 +237,32 @@ for (const nc of [true, false]) {
   );
 }
 
+// 5. Curtains: a partial target must stay partial. The old code re-derived intent
+// from the module's status echo, so a 40% request came back as a full open.
+{
+  const [accessory] = discover([{
+    device_name: 'Blind', device_type: 'relaycurtains', device_address: 14,
+    channel: 1, nc: true, duration: 10, curtains_precision: 10,
+  }]);
+  const covering = accessory.service(Service.WindowCovering);
+  const target = covering.getCharacteristic(Characteristic.TargetPosition);
+
+  target.handlers.set(40); // from the persisted 0%
+  timers.splice(0).filter((t) => t.delay === 400).forEach((t) => t.fn()); // slider debounce
+  const move = sent.find((s) => s.command === 0xE3E0);
+  assert.equal(move.data.status, 1, 'partial open must command the opening direction');
+
+  // The module echoes "opening"; that echo is our own move, not a wall switch.
+  bus.device('1.14').emit(0xE3E1, { data: { curtain: 1, status: 1 } });
+  assert.equal(target.value, 40, `partial target must survive the status echo, got ${target.value}`);
+  const stopper = timers.filter((t) => t.delay === 0.4 * 10 * 1000);
+  assert.equal(stopper.length, 1, 'a stop must be armed for 40% of the travel time');
+
+  // An unsolicited "closing" (wall switch) is a full travel, so no stop is armed.
+  timers.length = 0;
+  bus.device('1.14').emit(0xE3E1, { data: { curtain: 1, status: 2 } });
+  assert.equal(target.value, 0, 'a wall-switch close must track to 0%');
+  assert.equal(timers.length, 0, 'a full travel must let the limit switch stop it');
+}
+
 console.log('smoke checks passed');
